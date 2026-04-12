@@ -8,6 +8,12 @@ class Game:
         self.board = self.create_board()
         self.current_player_idx = 0
         self.game_over = False
+        self.messages = []
+        self.pending_input = None # Store info about what input is needed
+
+    def log(self, message):
+        self.messages.append(message)
+        print(message)
 
     def create_board(self):
         # Create a circular board with a mix of locations
@@ -32,7 +38,8 @@ class Game:
         return board
 
     def get_input(self, prompt):
-        # This will be overridden or used via input() in CLI
+        # In UI-agnostic mode, we might need to pause execution here.
+        # For now, let's keep it but ideally we move to a request/response model.
         return input(prompt)
 
     def get_int_input(self, prompt, min_val=None, max_val=None):
@@ -40,14 +47,14 @@ class Game:
             try:
                 val = int(self.get_input(prompt))
                 if min_val is not None and val < min_val:
-                    print(f"Minimum value is {min_val}.")
+                    self.log(f"Minimum value is {min_val}.")
                     continue
                 if max_val is not None and val > max_val:
-                    print(f"Maximum value is {max_val}.")
+                    self.log(f"Maximum value is {max_val}.")
                     continue
                 return val
             except ValueError:
-                print("Invalid input. Please enter a number.")
+                self.log("Invalid input. Please enter a number.")
 
     def get_bool_input(self, prompt):
         while True:
@@ -56,7 +63,7 @@ class Game:
                 return True
             if val in ['n', 'no']:
                 return False
-            print("Please enter 'y' or 'n'.")
+            self.log("Please enter 'y' or 'n'.")
 
     def use_loaded_dice(self, player):
         if player.has_item("Loaded Dice"):
@@ -71,27 +78,28 @@ class Game:
             bonus = self.use_loaded_dice(player)
             if bonus:
                 roll += bonus
-                print(f"Loaded Dice used! Roll: {roll}")
+                self.log(f"Loaded Dice used! Roll: {roll}")
         return roll
 
     def move_player(self, player):
         roll = random.randint(1, 6)
-        print(f"{player.name} rolled a {roll} for movement.")
+        self.log(f"{player.name} rolled a {roll} for movement.")
         player.position = (player.position + roll) % len(self.board)
         tile = self.board[player.position]
         tile.on_land(player, self)
 
     def play_turn(self):
         player = self.players[self.current_player_idx]
-        print(f"\n--- {player.name}'s Turn ---")
-        print(player)
+        self.log(f"--- {player.name}'s Turn ---")
+        self.log(str(player))
         self.move_player(player)
 
         if player.debt <= 0:
-            print(f"CONGRATULATIONS {player.name}! You escaped debt and won the game!")
+            self.log(f"CONGRATULATIONS {player.name}! You escaped debt and won the game!")
             self.game_over = True
 
-        self.current_player_idx = (self.current_player_idx + 1) % len(self.players)
+        if not self.game_over:
+            self.current_player_idx = (self.current_player_idx + 1) % len(self.players)
 
     def start(self):
         while not self.game_over:

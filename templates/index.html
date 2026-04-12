@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Debt Escape Board Game</title>
+    <style>
+        body { font-family: sans-serif; background: #f0f0f0; display: flex; flex-direction: column; align-items: center; }
+        #game-container { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); width: 80%; max-width: 800px; margin-top: 20px; }
+        #board { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 20px; }
+        .tile { border: 1px solid #ccc; padding: 10px; height: 60px; display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; font-size: 0.8em; text-align: center; }
+        .tile.active { background: #e0f7fa; border-color: #00bcd4; }
+        .player-token { width: 10px; height: 10px; border-radius: 50%; display: inline-block; margin: 2px; }
+        #stats { display: flex; justify-content: space-around; margin-bottom: 20px; background: #eee; padding: 10px; border-radius: 4px; }
+        #messages { height: 200px; overflow-y: auto; border: 1px solid #ddd; padding: 10px; margin-bottom: 20px; background: #fafafa; }
+        #controls { display: flex; flex-direction: column; align-items: center; }
+        button { padding: 10px 20px; cursor: pointer; background: #007bff; color: white; border: none; border-radius: 4px; }
+        button:disabled { background: #ccc; }
+        input[type="text"] { padding: 10px; margin-bottom: 10px; width: 200px; }
+        .hidden { display: none; }
+    </style>
+</head>
+<body>
+    <h1>Debt Escape</h1>
+
+    <div id="setup">
+        <input type="text" id="player-names" placeholder="Names (comma separated)" value="Alice,Bob">
+        <button onclick="startGame()">Start Game</button>
+    </div>
+
+    <div id="game-container" class="hidden">
+        <div id="stats"></div>
+        <div id="board"></div>
+        <div id="messages"></div>
+        <div id="controls">
+            <div id="input-area" class="hidden">
+                <p id="prompt"></p>
+                <input type="text" id="user-input">
+                <button onclick="submitInput()">Submit</button>
+            </div>
+            <button id="turn-btn" onclick="nextAction()">Play Turn</button>
+        </div>
+    </div>
+
+    <script>
+        let gameState = {};
+
+        async function startGame() {
+            const names = document.getElementById('player-names').value.split(',').map(n => n.trim());
+            const resp = await fetch('/start', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ names })
+            });
+            if (resp.ok) {
+                document.getElementById('setup').classList.add('hidden');
+                document.getElementById('game-container').classList.remove('hidden');
+                updateState();
+            }
+        }
+
+        async function updateState() {
+            const resp = await fetch('/state');
+            gameState = await resp.json();
+            render();
+        }
+
+        function render() {
+            // Render Stats
+            const statsDiv = document.getElementById('stats');
+            statsDiv.innerHTML = gameState.players.map((p, i) => `
+                <div style="color: ${i === gameState.current_player_idx ? 'red' : 'black'}">
+                    <strong>${p.name}</strong><br>
+                    Money: ${p.money}<br>
+                    Debt: ${p.debt}
+                </div>
+            `).join('');
+
+            // Render Board
+            const boardDiv = document.getElementById('board');
+            boardDiv.innerHTML = gameState.board.map((name, i) => {
+                const playersOnTile = gameState.players.filter(p => p.position === i);
+                return `
+                    <div class="tile">
+                        ${name}
+                        <div>${playersOnTile.map(p => `<span class="player-token" style="background: ${getPlayerColor(gameState.players.indexOf(p))}"></span>`).join('')}</div>
+                    </div>
+                `;
+            }).join('');
+
+            // Render Messages
+            const messagesDiv = document.getElementById('messages');
+            if (gameState.messages) {
+                gameState.messages.forEach(msg => {
+                    const p = document.createElement('p');
+                    p.textContent = msg;
+                    messagesDiv.appendChild(p);
+                });
+                messagesDiv.scrollTop = messagesDiv.scrollHeight;
+            }
+
+            // Render Controls
+            const turnBtn = document.getElementById('turn-btn');
+            const inputArea = document.getElementById('input-area');
+            if (gameState.pending_input) {
+                turnBtn.classList.add('hidden');
+                inputArea.classList.remove('hidden');
+                document.getElementById('prompt').textContent = gameState.pending_input;
+            } else {
+                turnBtn.classList.remove('hidden');
+                inputArea.classList.add('hidden');
+                if (gameState.game_over) {
+                    turnBtn.textContent = "Game Over";
+                    turnBtn.disabled = true;
+                }
+            }
+        }
+
+        async function nextAction() {
+            const resp = await fetch('/action', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({})
+            });
+            await updateState();
+        }
+
+        async function submitInput() {
+            const input = document.getElementById('user-input').value;
+            document.getElementById('user-input').value = '';
+            const resp = await fetch('/action', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ input })
+            });
+            await updateState();
+        }
+
+        function getPlayerColor(idx) {
+            const colors = ['#f44336', '#2196f3', '#4caf50', '#ffeb3b'];
+            return colors[idx % colors.length];
+        }
+    </script>
+</body>
+</html>
