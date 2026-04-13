@@ -82,12 +82,13 @@ class Game {
     async playTurn() {
         const player = this.players[this.currentPlayerIdx];
         this.log(`--- ${player.name}'s Turn ---`);
-        this.log(`Money: ${player.money}, Debt: ${player.debt}, Pos: ${player.position}`);
         await this.movePlayer(player);
 
         if (player.debt <= 0) {
             this.log(`CONGRATULATIONS ${player.name}! You escaped debt and won the game!`);
             this.gameOver = true;
+        } else {
+            await this.getChoice("Turn complete.", ["End Turn 🏁"], player);
         }
 
         if (!this.gameOver) {

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Debt Escape - Ultimate Edition</title>
+    <title>Debt Escape - Ultimate Casino Edition</title>
     <style>
         :root {
             --primary: #2c3e50;
@@ -12,10 +12,11 @@
             --light: #ecf0f1;
             --dark: #2c3e50;
             --gold: #f1c40f;
+            --felt: #1a5e35;
         }
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: #1a1a1a;
+            background: #0a0a0a;
             color: white;
             margin: 0;
             display: flex;
@@ -29,48 +30,53 @@
         #setup-card { background: white; color: #333; padding: 40px; border-radius: 20px; text-align: center; max-width: 400px; width: 90%; box-shadow: 0 0 30px rgba(0,0,0,0.5); }
         #setup-card input { width: 100%; font-size: 1.2em; padding: 10px; margin: 20px 0; box-sizing: border-box; border: 2px solid #ddd; border-radius: 8px; }
 
-        #game-container { position: relative; width: 900px; height: 900px; display: flex; justify-content: center; align-items: center; }
+        #game-container { position: relative; width: 100vw; height: 100vh; display: flex; justify-content: center; align-items: center; }
 
         /* The Board */
-        #board { position: relative; width: 800px; height: 800px; border-radius: 50%; border: 10px solid rgba(255,255,255,0.1); }
+        #board-wrapper { position: relative; width: 850px; height: 850px; flex-shrink: 0; }
+        #board { position: relative; width: 800px; height: 800px; border-radius: 50%; border: 15px solid #3d2b1f; background: rgba(255,255,255,0.05); box-shadow: 0 0 50px rgba(0,0,0,1); }
 
         .tile {
             position: absolute;
-            width: 140px;
-            height: 140px;
-            background: white;
+            width: 130px;
+            height: 130px;
+            background: #eee;
             color: #333;
-            border-radius: 25px;
+            border-radius: 20px;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            box-shadow: 0 10px 0 #bbb;
             transition: all 0.3s;
             z-index: 10;
+            border: 2px solid #fff;
         }
-        .tile.active { transform: scale(1.1); box-shadow: 0 0 30px var(--secondary); border: 4px solid var(--secondary); }
-        .tile-emoji { font-size: 3.5em; }
-        .tile-name { font-weight: bold; font-size: 1em; }
+        .tile.active { transform: scale(1.1); box-shadow: 0 0 30px var(--gold); border-color: var(--gold); }
+        .tile-emoji { font-size: 3em; }
+        .tile-name { font-weight: bold; font-size: 0.9em; }
 
         /* Tokens */
         .token {
             position: absolute;
-            width: 30px;
-            height: 30px;
+            width: 28px;
+            height: 28px;
             border-radius: 50%;
-            border: 3px solid white;
+            border: 4px solid white;
             z-index: 50;
-            transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
-            box-shadow: 0 0 10px rgba(0,0,0,0.5);
+            transition: all 0.5s ease-in-out;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.5);
         }
 
-        /* Center Interaction Area */
+        /* Center Interaction Area - Blackjack Theme */
         #center-ui {
             position: absolute;
-            width: 450px;
-            height: 450px;
-            background: rgba(44, 62, 80, 0.95);
+            width: 480px;
+            height: 480px;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            background: var(--felt);
             border-radius: 50%;
             display: flex;
             flex-direction: column;
@@ -78,87 +84,85 @@
             justify-content: center;
             padding: 40px;
             box-sizing: border-box;
-            box-shadow: inset 0 0 50px rgba(0,0,0,0.5), 0 0 30px rgba(0,0,0,0.5);
+            box-shadow: inset 0 0 100px rgba(0,0,0,0.8), 0 0 30px rgba(0,0,0,0.5);
             text-align: center;
-            border: 5px solid rgba(255,255,255,0.1);
+            border: 10px solid #2c1e15;
             z-index: 20;
         }
 
-        #game-numbers { font-size: 4em; font-weight: bold; color: var(--gold); margin-bottom: 10px; text-shadow: 0 0 20px rgba(241, 196, 15, 0.5); min-height: 1.2em; }
-        #action-prompt { font-size: 1.4em; margin: 10px 0; min-height: 3em; display: flex; align-items: center; justify-content: center; }
+        #game-numbers { font-size: 5em; font-weight: bold; color: var(--gold); margin-bottom: 5px; text-shadow: 2px 2px 0px rgba(0,0,0,0.5); min-height: 1.2em; font-family: 'Georgia', serif; }
+        #action-prompt { font-size: 1.5em; margin: 5px 0; min-height: 2.5em; display: flex; align-items: center; justify-content: center; color: white; text-shadow: 1px 1px 2px black; }
 
-        .btn-group { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; max-height: 150px; overflow-y: auto; }
-        .action-btn { font-size: 1.1em; padding: 10px 20px; border-radius: 12px; border: none; cursor: pointer; background: var(--secondary); color: white; transition: 0.2s; box-shadow: 0 4px 0 #1e8449; }
-        .action-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 0 #1e8449; }
-        .action-btn:active { transform: translateY(2px); box-shadow: 0 0 0 #1e8449; }
+        .btn-group { display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; }
+        .action-btn { font-size: 1.1em; padding: 12px 24px; border-radius: 50px; border: none; cursor: pointer; background: #c0392b; color: white; transition: 0.2s; box-shadow: 0 4px 0 #7b241c; font-weight: bold; text-transform: uppercase; }
+        .action-btn:hover { transform: scale(1.05); box-shadow: 0 6px 0 #7b241c; }
+        .action-btn:active { transform: translateY(2px); box-shadow: 0 0 0 #7b241c; }
         .item-btn { background: var(--gold); color: #333; box-shadow: 0 4px 0 #c29d0b; }
-        .item-btn:hover { box-shadow: 0 6px 0 #c29d0b; }
-        .roll-btn { background: #f39c12; font-size: 1.5em; padding: 15px 30px; box-shadow: 0 4px 0 #d35400; }
+        .roll-btn { background: #2980b9; font-size: 1.4em; box-shadow: 0 4px 0 #1a5276; }
 
-        /* Seamless Log */
-        #messages {
+        /* Turn Log - Right Side */
+        #turn-log-container {
             position: absolute;
-            top: -220px;
-            width: 400px;
-            height: 200px;
-            overflow-y: auto;
-            display: flex;
-            flex-direction: column-reverse;
-            gap: 8px;
-            padding: 10px;
-            mask-image: linear-gradient(to top, black 80%, transparent 100%);
-        }
-        #messages p {
-            margin: 0;
-            padding: 8px 12px;
-            background: rgba(255,255,255,0.1);
-            border-radius: 15px;
-            font-size: 0.9em;
-            animation: fadeIn 0.3s ease-out;
-            border-left: 4px solid var(--gold);
-        }
-
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-
-        /* Player Stats Area */
-        #stats-container {
-            position: absolute;
-            top: 20px;
-            left: 20px;
+            right: 40px;
+            width: 320px;
+            height: 80vh;
             display: flex;
             flex-direction: column;
             gap: 15px;
-            width: 250px;
+        }
+        #turn-log-header { font-size: 1.5em; font-weight: bold; border-bottom: 2px solid var(--gold); padding-bottom: 10px; color: var(--gold); }
+        #turn-log { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; padding: 10px; background: rgba(255,255,255,0.05); border-radius: 15px; }
+        #turn-log p { margin: 0; padding: 10px; background: rgba(255,255,255,0.1); border-radius: 10px; font-size: 0.95em; border-left: 4px solid var(--gold); animation: slideIn 0.3s ease-out; }
+
+        @keyframes slideIn { from { opacity: 0; transform: translateX(20px); } to { opacity: 1; transform: translateX(0); } }
+
+        /* Player Stats Area - Left Side */
+        #stats-container {
+            position: absolute;
+            left: 40px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            width: 300px;
+            height: 80vh;
+            overflow-y: auto;
         }
         .player-card {
             background: rgba(255,255,255,0.1);
-            padding: 12px;
-            border-radius: 15px;
+            padding: 20px;
+            border-radius: 20px;
             backdrop-filter: blur(10px);
-            border-left: 8px solid #555;
+            border: 2px solid rgba(255,255,255,0.1);
             transition: 0.3s;
         }
-        .player-card.active { background: rgba(255,255,255,0.2); transform: translateX(10px); border-left-color: var(--secondary); }
-        .player-card h3 { margin: 0 0 5px 0; font-size: 1.1em; }
-        .player-card p { margin: 2px 0; font-size: 0.9em; opacity: 0.9; }
+        .player-card.active {
+            background: var(--gold);
+            color: #333;
+            transform: scale(1.05) translateX(10px);
+            border-color: white;
+            box-shadow: 0 10px 20px rgba(241, 196, 15, 0.3);
+        }
+        .player-card h3 { margin: 0 0 10px 0; font-size: 1.4em; }
+        .player-card p { margin: 4px 0; font-size: 1.1em; font-weight: bold; }
 
         .hidden { display: none !important; }
 
-        #room-info { position: absolute; bottom: 20px; right: 20px; font-size: 1.2em; opacity: 0.5; }
+        #room-info { position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); font-size: 1.2em; opacity: 0.7; font-weight: bold; color: var(--gold); }
     </style>
 </head>
 <body>
     <div id="setup-overlay">
         <div id="setup-card">
-            <h2>🏥 Debt Escape 🎰</h2>
-            <p>Can you pay back 50,000?</p>
+            <h2>🏛️ Debt Escape 🏛️</h2>
+            <p>Ultimate Casino Edition</p>
 
             <div id="setup-options">
-                <input type="text" id="player-names" placeholder="Names (e.g. Alice, Bob)" value="Alice, Bob">
-                <button class="action-btn" onclick="createRoom()">Create New Game 🏠</button>
-                <hr>
-                <p>Already have a game? (Room 1)</p>
-                <button class="action-btn" onclick="joinRoom('1')">Join Room 1 🤝</button>
+                <input type="text" id="player-names" placeholder="Your Name" value="Player">
+                <input type="text" id="room-id-input" placeholder="ROOM CODE (Join existing)">
+                <div style="display: flex; gap: 10px; margin-top: 10px;">
+                    <button class="action-btn" style="flex: 1;" onclick="createRoom()">New Game</button>
+                    <button class="action-btn" style="flex: 1;" onclick="joinRoom()">Join Game</button>
+                </div>
             </div>
         </div>
     </div>
@@ -166,24 +170,29 @@
     <div id="game-container" class="hidden">
         <div id="stats-container"></div>
 
-        <div id="board">
-            <!-- Tiles will be positioned by JS -->
-            <div class="tile" id="tile-0"><div class="tile-emoji">🏥</div><div class="tile-name">Rehab</div></div>
-            <div class="tile" id="tile-1"><div class="tile-emoji">🎰</div><div class="tile-name">Casino</div></div>
-            <div class="tile" id="tile-2"><div class="tile-emoji">🌑</div><div class="tile-name">Back Alley</div></div>
-            <div class="tile" id="tile-3"><div class="tile-emoji">🛍️</div><div class="tile-name">Shop</div></div>
-            <div class="tile" id="tile-4"><div class="tile-emoji">🚕</div><div class="tile-name">Taxi</div></div>
+        <div id="board-wrapper">
+            <div id="board">
+                <div class="tile" id="tile-0"><div class="tile-emoji">🏥</div><div class="tile-name">Rehab</div></div>
+                <div class="tile" id="tile-1"><div class="tile-emoji">🎰</div><div class="tile-name">Casino</div></div>
+                <div class="tile" id="tile-2"><div class="tile-emoji">🌑</div><div class="tile-name">Back Alley</div></div>
+                <div class="tile" id="tile-3"><div class="tile-emoji">🛍️</div><div class="tile-name">Shop</div></div>
+                <div class="tile" id="tile-4"><div class="tile-emoji">🚕</div><div class="tile-name">Taxi</div></div>
+            </div>
+
+            <div id="center-ui">
+                <div id="game-numbers">🎲</div>
+                <div id="action-prompt">Waiting...</div>
+                <div id="btn-container" class="btn-group"></div>
+                <div id="manual-input" class="hidden">
+                    <input type="text" id="user-input" style="width: 150px; padding: 10px; border-radius: 8px;">
+                    <button class="action-btn" id="submit-btn">OK</button>
+                </div>
+            </div>
         </div>
 
-        <div id="center-ui">
-            <div id="messages"></div>
-            <div id="game-numbers">🎲</div>
-            <div id="action-prompt">Waiting for players...</div>
-            <div id="btn-container" class="btn-group"></div>
-            <div id="manual-input" class="hidden">
-                <input type="text" id="user-input" style="width: 150px; padding: 8px; border-radius: 8px;">
-                <button class="action-btn" id="submit-btn">OK</button>
-            </div>
+        <div id="turn-log-container">
+            <div id="turn-log-header">📝 TURN LOG</div>
+            <div id="turn-log"></div>
         </div>
 
         <div id="room-info">ROOM: <span id="room-id">?</span></div>
@@ -194,43 +203,38 @@
         const socket = io();
         const colors = ['#e74c3c', '#3498db', '#2ecc71', '#f1c40f', '#9b59b6'];
         let currentRoomId = null;
+        let localPlayerName = null;
         let playerTokens = {};
+        let gameState = null;
 
-        // Position tiles in a circle
         const boardSize = 800;
-        const radius = 330;
+        const radius = 335;
         const tiles = document.querySelectorAll('.tile');
         const tileCoords = [];
 
         tiles.forEach((tile, i) => {
             const angle = -Math.PI/2 + (i * (2 * Math.PI / tiles.length));
-            const x = (boardSize/2) + radius * Math.cos(angle) - 70;
-            const y = (boardSize/2) + radius * Math.sin(angle) - 70;
+            const x = (boardSize/2) + radius * Math.cos(angle) - 65;
+            const y = (boardSize/2) + radius * Math.sin(angle) - 65;
             tile.style.left = `${x}px`;
             tile.style.top = `${y}px`;
-            tileCoords.push({x: x + 70, y: y + 70}); // Center of tile
+            tileCoords.push({x: x + 65, y: y + 65});
         });
 
         function createRoom() {
-            const names = document.getElementById('player-names').value.split(',').map(n => n.trim());
+            localPlayerName = document.getElementById('player-names').value.trim();
+            const names = [localPlayerName];
             socket.emit('create_room', names);
         }
 
-        function joinRoom(id) {
-            const roomId = id || "1";
+        function joinRoom() {
+            localPlayerName = document.getElementById('player-names').value.trim();
+            const roomId = document.getElementById('room-id-input').value.trim().toUpperCase();
             socket.emit('join_room', roomId);
         }
 
-        socket.on('room_created', (roomId) => {
-            currentRoomId = roomId;
-            enterGame();
-        });
-
-        socket.on('joined_room', (roomId) => {
-            currentRoomId = roomId;
-            enterGame();
-        });
-
+        socket.on('room_created', (roomId) => { currentRoomId = roomId; enterGame(); });
+        socket.on('joined_room', (roomId) => { currentRoomId = roomId; enterGame(); });
         socket.on('error', (msg) => alert(msg));
 
         function enterGame() {
@@ -240,31 +244,30 @@
         }
 
         socket.on('game_message', (msg) => {
-            const messagesDiv = document.getElementById('messages');
+            if (msg.startsWith('---')) {
+                document.getElementById('turn-log').innerHTML = ''; // Clear log on new turn
+            }
+            const log = document.getElementById('turn-log');
             const p = document.createElement('p');
             p.textContent = msg;
-            messagesDiv.appendChild(p);
+            log.appendChild(p);
+            log.scrollTop = log.scrollHeight;
 
             const numMatch = msg.match(/(?:Total|New total|rolled a|Roll|Rolled|be|is):?\s*(\d+)/i);
-            if (numMatch) {
-                const val = numMatch[1];
-                animateNumbers(val);
-            }
+            if (numMatch) animateNumbers(numMatch[1]);
         });
 
         function animateNumbers(finalVal) {
             const el = document.getElementById('game-numbers');
             let count = 0;
-            const emojis = ['🎲', '🎯', '🎰', '✨'];
             const interval = setInterval(() => {
                 el.textContent = Math.floor(Math.random() * 6) + 1;
-                el.style.transform = `scale(${1 + Math.random() * 0.5}) rotate(${Math.random() * 20 - 10}deg)`;
-                count++;
-                if (count > 12) {
+                el.style.transform = `scale(${1 + Math.random() * 0.3})`;
+                if (++count > 10) {
                     clearInterval(interval);
                     el.textContent = finalVal;
                     el.style.transform = 'scale(1.2)';
-                    setTimeout(() => el.style.transform = 'scale(1)', 200);
+                    setTimeout(() => el.style.transform = 'scale(1)', 150);
                 }
             }, 60);
         }
@@ -275,13 +278,14 @@
             return div.innerHTML;
         }
 
-        socket.on('game_state', (state) => {
+        socket.on('game_state', async (state) => {
             if (!state) return;
+            const oldState = gameState;
+            gameState = state;
 
-            // Update Stats
             const statsContainer = document.getElementById('stats-container');
             statsContainer.innerHTML = state.players.map((p, i) => `
-                <div class="player-card ${i === state.currentPlayerIdx ? 'active' : ''}" style="border-left-color: ${colors[i % colors.length]}">
+                <div class="player-card ${i === state.currentPlayerIdx ? 'active' : ''}">
                     <h3>${escapeHTML(p.name)}</h3>
                     <p>💰 $${p.money.toLocaleString()}</p>
                     <p>📉 Debt: $${p.debt.toLocaleString()}</p>
@@ -289,56 +293,75 @@
                 </div>
             `).join('');
 
-            // Update Tiles & Tokens
             tiles.forEach(t => t.classList.remove('active'));
             const activePlayer = state.players[state.currentPlayerIdx];
             document.getElementById(`tile-${activePlayer.position}`).classList.add('active');
 
-            state.players.forEach((p, i) => {
+            for (let i = 0; i < state.players.length; i++) {
+                const p = state.players[i];
                 if (!playerTokens[p.name]) {
                     const token = document.createElement('div');
                     token.className = 'token';
                     token.style.background = colors[i % colors.length];
                     document.getElementById('board').appendChild(token);
                     playerTokens[p.name] = token;
+                    updateTokenPos(p.name, p.position, i, state.players.length);
+                } else {
+                    const oldPos = oldState ? oldState.players[i].position : p.position;
+                    if (oldPos !== p.position) {
+                        await moveTokenAnimated(p.name, oldPos, p.position, i, state.players.length);
+                    } else {
+                        updateTokenPos(p.name, p.position, i, state.players.length);
+                    }
                 }
-
-                const coords = tileCoords[p.position];
-                // Offset tokens so they don't overlap perfectly
-                const offset = (i - (state.players.length-1)/2) * 20;
-                playerTokens[p.name].style.left = `${coords.x - 15 + offset}px`;
-                playerTokens[p.name].style.top = `${coords.y - 15}px`;
-            });
+            }
         });
 
-        const actionPrompt = document.getElementById('action-prompt');
-        const btnContainer = document.getElementById('btn-container');
+        function updateTokenPos(name, pos, idx, total) {
+            const coords = tileCoords[pos];
+            const offset = (idx - (total-1)/2) * 25;
+            playerTokens[name].style.left = `${coords.x - 14 + offset}px`;
+            playerTokens[name].style.top = `${coords.y - 14}px`;
+        }
 
-        socket.on('need_roll', ({ prompt, usableItems }) => {
+        async function moveTokenAnimated(name, start, end, idx, total) {
+            let current = start;
+            const numTiles = tiles.length;
+            while (current !== end) {
+                current = (current + 1) % numTiles;
+                updateTokenPos(name, current, idx, total);
+                await new Promise(r => setTimeout(r, 400));
+            }
+        }
+
+        socket.on('need_roll', ({ prompt, usableItems, playerName }) => {
             resetInteraction();
-            actionPrompt.textContent = prompt;
-
+            if (playerName && localPlayerName !== playerName) {
+                document.getElementById('action-prompt').textContent = `Waiting for ${playerName}...`;
+                return;
+            }
+            document.getElementById('action-prompt').textContent = prompt;
             const rollBtn = document.createElement('button');
             rollBtn.className = 'action-btn roll-btn';
             rollBtn.textContent = 'ROLL 🎲';
-            rollBtn.onclick = () => {
-                socket.emit('submit_input', { roomId: currentRoomId, val: 'roll' });
-                resetInteraction();
-            };
-            btnContainer.appendChild(rollBtn);
-
+            rollBtn.onclick = () => { socket.emit('submit_input', { roomId: currentRoomId, val: 'roll' }); resetInteraction(); };
+            document.getElementById('btn-container').appendChild(rollBtn);
             addItems(usableItems);
         });
 
-        socket.on('need_choice', ({ prompt, choices, usableItems }) => {
+        socket.on('need_choice', ({ prompt, choices, usableItems, playerName }) => {
             resetInteraction();
-            actionPrompt.textContent = prompt;
+            if (playerName && localPlayerName !== playerName) {
+                document.getElementById('action-prompt').textContent = `Waiting for ${playerName}...`;
+                return;
+            }
+            document.getElementById('action-prompt').textContent = prompt;
             choices.forEach(choice => {
                 const btn = document.createElement('button');
                 btn.className = 'action-btn';
                 btn.textContent = choice;
                 btn.onclick = () => { socket.emit('submit_input', { roomId: currentRoomId, val: choice }); resetInteraction(); };
-                btnContainer.appendChild(btn);
+                document.getElementById('btn-container').appendChild(btn);
             });
             addItems(usableItems);
         });
@@ -350,32 +373,19 @@
                 btn.className = 'action-btn item-btn';
                 btn.textContent = `Use ${item} 🎒`;
                 btn.onclick = () => { socket.emit('submit_input', { roomId: currentRoomId, val: item }); resetInteraction(); };
-                btnContainer.appendChild(btn);
+                document.getElementById('btn-container').appendChild(btn);
             });
         }
 
-        socket.on('need_input', (prompt) => {
-            resetInteraction();
-            actionPrompt.textContent = prompt;
-            document.getElementById('manual-input').classList.remove('hidden');
-        });
-
-        document.getElementById('submit-btn').onclick = () => {
-            socket.emit('submit_input', { roomId: currentRoomId, val: document.getElementById('user-input').value });
-            document.getElementById('user-input').value = '';
-            resetInteraction();
-        };
-
         function resetInteraction() {
-            actionPrompt.textContent = "Waiting...";
-            btnContainer.innerHTML = '';
+            document.getElementById('action-prompt').textContent = "Processing...";
+            document.getElementById('btn-container').innerHTML = '';
             document.getElementById('manual-input').classList.add('hidden');
         }
 
         socket.on('game_over', () => {
             resetInteraction();
-            actionPrompt.textContent = "🎊 ESCAPED DEBT! 🎊";
-            document.getElementById('game-numbers').textContent = "🏆";
+            document.getElementById('action-prompt').textContent = "🎊 ESCAPED DEBT! 🎊";
         });
     </script>
 </body>

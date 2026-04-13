@@ -17,7 +17,7 @@ io.on('connection', (socket) => {
     console.log('a user connected');
 
     socket.on('create_room', (playerNames) => {
-        const roomId = "1";
+        const roomId = Math.random().toString(36).substring(2, 8).toUpperCase();
         const game = new Game(playerNames);
 
         setupGame(game, roomId);
@@ -57,7 +57,7 @@ function setupGame(game, roomId) {
 
     game.getChoice = async (prompt, choices, player) => {
         const usableItems = player ? player.inventory.filter(item => ["Peek", "Insurance", "Second", "Loaded"].some(k => item.includes(k))) : [];
-        io.to(roomId).emit('need_choice', { prompt, choices, usableItems });
+        io.to(roomId).emit('need_choice', { prompt, choices, usableItems, playerName: player ? player.name : null });
         return new Promise((resolve) => {
             inputResolvers.set(roomId, resolve);
         });
@@ -65,7 +65,7 @@ function setupGame(game, roomId) {
 
     game.waitForRoll = async (prompt, player) => {
         const usableItems = player ? player.inventory.filter(item => ["Peek", "Insurance", "Second", "Loaded"].some(k => item.includes(k))) : [];
-        io.to(roomId).emit('need_roll', { prompt, usableItems });
+        io.to(roomId).emit('need_roll', { prompt, usableItems, playerName: player ? player.name : null });
         return new Promise((resolve) => {
             inputResolvers.set(roomId, resolve);
         });
