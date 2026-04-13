@@ -2,7 +2,17 @@
 
 A circular board game where players must navigate various locations to escape a starting debt of 50,000.
 
-## How to Launch
+## How to Launch (NPM)
+
+### Option 1: Using NPM (Recommended)
+Run the following commands in your terminal:
+```bash
+npm install
+npm start
+```
+Then visit `http://localhost:3000` in your browser.
+
+## How to Launch (Python)
 
 ### Option 1: Using the Shell Script (Recommended)
 Simply run the following command in your terminal:

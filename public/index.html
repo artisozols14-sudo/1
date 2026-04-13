@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Debt Escape Board Game (NPM Edition)</title>
+    <style>
+        body { font-family: sans-serif; background: #f0f0f0; display: flex; flex-direction: column; align-items: center; }
+        #game-container { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); width: 80%; max-width: 800px; margin-top: 20px; }
+        #board { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 20px; }
+        .tile { border: 1px solid #ccc; padding: 10px; height: 60px; display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; font-size: 0.8em; text-align: center; }
+        .player-token { width: 10px; height: 10px; border-radius: 50%; display: inline-block; margin: 2px; }
+        #stats { display: flex; justify-content: space-around; margin-bottom: 20px; background: #eee; padding: 10px; border-radius: 4px; }
+        #messages { height: 250px; overflow-y: auto; border: 1px solid #ddd; padding: 10px; margin-bottom: 20px; background: #fafafa; font-size: 0.9em; }
+        #controls { display: flex; flex-direction: column; align-items: center; }
+        button { padding: 10px 20px; cursor: pointer; background: #007bff; color: white; border: none; border-radius: 4px; }
+        input[type="text"] { padding: 10px; margin-bottom: 10px; width: 200px; }
+        .hidden { display: none; }
+    </style>
+</head>
+<body>
+    <h1>Debt Escape (NPM)</h1>
+
+    <div id="setup">
+        <input type="text" id="player-names" placeholder="Names (comma separated)" value="Alice,Bob">
+        <button id="start-btn">Start Game</button>
+    </div>
+
+    <div id="game-container" class="hidden">
+        <div id="stats"></div>
+        <div id="board"></div>
+        <div id="messages"></div>
+        <div id="controls">
+            <div id="input-area" class="hidden">
+                <p id="prompt"></p>
+                <input type="text" id="user-input">
+                <button id="submit-btn">Submit</button>
+            </div>
+            <p id="wait-msg">Waiting for game update...</p>
+        </div>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        const socket = io();
+        const colors = ['#f44336', '#2196f3', '#4caf50', '#ffeb3b'];
+
+        document.getElementById('start-btn').onclick = () => {
+            const names = document.getElementById('player-names').value.split(',').map(n => n.trim());
+            socket.emit('start_game', names);
+            document.getElementById('setup').classList.add('hidden');
+            document.getElementById('game-container').classList.remove('hidden');
+        };
+
+        socket.on('game_message', (msg) => {
+            const messagesDiv = document.getElementById('messages');
+            const p = document.createElement('p');
+            p.textContent = msg;
+            messagesDiv.appendChild(p);
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        });
+
+        socket.on('game_state', (state) => {
+            if (!state) return;
+
+            // Render Stats
+            const statsDiv = document.getElementById('stats');
+            statsDiv.innerHTML = state.players.map((p, i) => `
+                <div style="color: ${i === state.currentPlayerIdx ? 'red' : 'black'}">
+                    <strong>${p.name}</strong><br>
+                    Money: ${p.money}<br>
+                    Debt: ${p.debt}
+                </div>
+            `).join('');
+
+            // Render Board
+            const boardDiv = document.getElementById('board');
+            boardDiv.innerHTML = state.board.map((name, i) => {
+                const playersOnTile = state.players.filter(p => p.position === i);
+                return `
+                    <div class="tile">
+                        ${name}
+                        <div>${playersOnTile.map(p => {
+                            const pIdx = state.players.findIndex(player => player.name === p.name);
+                            return `<span class="player-token" style="background: ${colors[pIdx % colors.length]}"></span>`;
+                        }).join('')}</div>
+                    </div>
+                `;
+            }).join('');
+        });
+
+        socket.on('need_input', (prompt) => {
+            document.getElementById('input-area').classList.remove('hidden');
+            document.getElementById('wait-msg').classList.add('hidden');
+            document.getElementById('prompt').textContent = prompt;
+        });
+
+        document.getElementById('submit-btn').onclick = () => {
+            const val = document.getElementById('user-input').value;
+            socket.emit('submit_input', val);
+            document.getElementById('user-input').value = '';
+            document.getElementById('input-area').classList.add('hidden');
+            document.getElementById('wait-msg').classList.remove('hidden');
+        };
+
+        socket.on('game_over', () => {
+            document.getElementById('wait-msg').textContent = "Game Over!";
+        });
+    </script>
+</body>
+</html>
