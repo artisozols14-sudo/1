@@ -1,7 +1,7 @@
 class Player {
     constructor(name) {
         this.name = name;
-        this.money = 0;
+        this.money = 2000;
         this.debt = 50000;
         this.position = 0;
         this.inventory = [];

@@ -139,7 +139,7 @@ class CasinoTile extends Tile {
         if (!bust && player.shadyBetBonus) {
             game.log("😈 Shady Bets bonus! Doubling your win.");
             payout *= 2;
-            player.shady_bet_bonus = false;
+            player.shadyBetBonus = false;
         }
 
         player.money += payout;
@@ -291,7 +291,9 @@ class ShopTile extends Tile {
                     game.log("😢 Better luck next time.");
                 }
             } else {
-                player.addItem(selectedItemKey.split(' (')[0]);
+                // Strip emojis for easier inventory management
+                const itemName = selectedItemKey.split(' (')[0].replace(/[^\x00-\x7F]/g, "").trim();
+                player.addItem(itemName);
             }
         } else {
             game.log("❌ Not enough money!");

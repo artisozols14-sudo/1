@@ -37,8 +37,9 @@ class Game {
     }
 
     async getIntInput(prompt, min, max) {
-        const val = parseInt(await this.getInput(prompt));
-        return val;
+        let val = parseInt(await this.getInput(`${prompt} (Min: ${min}, Max: ${max})`));
+        if (isNaN(val)) val = min;
+        return Math.min(max, Math.max(min, val));
     }
 
     async getBoolInput(prompt, player) {

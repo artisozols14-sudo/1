@@ -17,7 +17,7 @@ io.on('connection', (socket) => {
     console.log('a user connected');
 
     socket.on('create_room', (playerNames) => {
-        const roomId = Math.random().toString(36).substring(2, 8).toUpperCase();
+        const roomId = "1";
         const game = new Game(playerNames);
 
         setupGame(game, roomId);
