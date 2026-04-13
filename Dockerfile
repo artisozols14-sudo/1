@@ -1,17 +1,20 @@
-# Use an official Python runtime as a parent image
-FROM python:3.12-slim
+# Use an official Node runtime as a parent image
+FROM node:22-slim
 
 # Set the working directory in the container
 WORKDIR /app
 
-# Copy the current directory contents into the container at /app
-COPY . /app
+# Copy package.json and package-lock.json
+COPY package*.json ./
 
-# Install any needed packages specified in requirements.txt
-RUN pip install --no-cache-dir flask
+# Install dependencies
+RUN npm install
 
-# Make port 5000 available to the world outside this container
-EXPOSE 5000
+# Copy the rest of the application code
+COPY . .
 
-# Run app.py when the container launches
-CMD ["python", "app.py"]
+# Make port 3000 available to the world outside this container
+EXPOSE 3000
+
+# Run npm start when the container launches
+CMD ["npm", "start"]

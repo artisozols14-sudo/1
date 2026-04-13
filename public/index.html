@@ -3,40 +3,85 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Debt Escape Board Game (NPM Edition)</title>
+    <title>Debt Escape - Ultimate Edition</title>
     <style>
-        body { font-family: sans-serif; background: #f0f0f0; display: flex; flex-direction: column; align-items: center; }
-        #game-container { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); width: 80%; max-width: 800px; margin-top: 20px; }
-        #board { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 20px; }
-        .tile { border: 1px solid #ccc; padding: 10px; height: 60px; display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; font-size: 0.8em; text-align: center; }
-        .player-token { width: 10px; height: 10px; border-radius: 50%; display: inline-block; margin: 2px; }
-        #stats { display: flex; justify-content: space-around; margin-bottom: 20px; background: #eee; padding: 10px; border-radius: 4px; }
-        #messages { height: 250px; overflow-y: auto; border: 1px solid #ddd; padding: 10px; margin-bottom: 20px; background: #fafafa; font-size: 0.9em; }
-        #controls { display: flex; flex-direction: column; align-items: center; }
-        button { padding: 10px 20px; cursor: pointer; background: #007bff; color: white; border: none; border-radius: 4px; }
-        input[type="text"] { padding: 10px; margin-bottom: 10px; width: 200px; }
-        .hidden { display: none; }
+        :root {
+            --primary: #2c3e50;
+            --secondary: #27ae60;
+            --accent: #e74c3c;
+            --light: #ecf0f1;
+            --dark: #2c3e50;
+        }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: var(--light); color: var(--dark); display: flex; flex-direction: column; align-items: center; margin: 0; padding: 20px; }
+        h1 { font-size: 3em; margin-bottom: 10px; text-shadow: 2px 2px #fff; }
+        #setup { background: white; padding: 40px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); text-align: center; }
+        #setup input { font-size: 1.5em; padding: 10px; border-radius: 10px; border: 2px solid #ddd; margin-bottom: 20px; width: 80%; }
+        #setup button { font-size: 1.5em; background: var(--secondary); border: none; padding: 15px 30px; color: white; border-radius: 10px; cursor: pointer; }
+
+        #game-container { width: 100%; max-width: 1000px; display: flex; flex-direction: column; gap: 20px; }
+
+        #top-bar { display: flex; justify-content: space-between; gap: 20px; }
+        .player-card { background: white; padding: 20px; border-radius: 15px; flex: 1; box-shadow: 0 5px 15px rgba(0,0,0,0.05); border-left: 10px solid #ccc; position: relative; }
+        .player-card.active { border-color: var(--secondary); transform: scale(1.05); z-index: 10; }
+        .player-card h3 { margin: 0 0 10px 0; font-size: 1.8em; }
+        .player-card p { margin: 5px 0; font-size: 1.2em; font-weight: bold; }
+
+        #board-wrapper { display: flex; justify-content: center; align-items: center; margin: 40px 0; }
+        #board-circle { display: grid; grid-template-columns: repeat(2, 200px); gap: 20px; }
+        .tile { width: 200px; height: 200px; background: white; border-radius: 20px; display: flex; flex-direction: column; align-items: center; justify-content: center; box-shadow: 0 5px 15px rgba(0,0,0,0.1); border: 4px solid transparent; transition: all 0.3s; position: relative; }
+        .tile.active { border-color: var(--secondary); transform: scale(1.1); box-shadow: 0 0 30px var(--secondary); }
+        .tile-emoji { font-size: 4em; margin-bottom: 10px; }
+        .tile-name { font-weight: bold; font-size: 1.2em; }
+        .token-container { position: absolute; bottom: 10px; display: flex; gap: 5px; }
+        .token { width: 25px; height: 25px; border-radius: 50%; border: 2px solid white; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
+
+        #messages { height: 300px; overflow-y: auto; background: white; padding: 20px; border-radius: 15px; box-shadow: inset 0 2px 10px rgba(0,0,0,0.05); font-size: 1.1em; line-height: 1.6; }
+        #messages p { margin: 10px 0; border-bottom: 1px solid #eee; padding-bottom: 5px; }
+
+        #interaction-area { background: #fff; padding: 30px; border-radius: 20px; box-shadow: 0 -10px 30px rgba(0,0,0,0.1); display: flex; flex-direction: column; align-items: center; min-height: 150px; }
+        #interaction-area h2 { margin-top: 0; }
+        .btn-group { display: flex; flex-wrap: wrap; gap: 15px; justify-content: center; }
+        .action-btn { font-size: 1.5em; padding: 15px 30px; border-radius: 15px; border: none; cursor: pointer; transition: transform 0.2s; background: var(--secondary); color: white; box-shadow: 0 5px 10px rgba(0,0,0,0.1); }
+        .action-btn:hover { transform: translateY(-3px); opacity: 0.9; }
+        .roll-btn { background: #f39c12; font-weight: bold; font-size: 2em; padding: 20px 40px; }
+
+        #manual-input { margin-top: 20px; display: flex; gap: 10px; }
+        #manual-input input { font-size: 1.2em; padding: 10px; border-radius: 10px; border: 2px solid #ddd; }
+
+        .hidden { display: none !important; }
     </style>
 </head>
 <body>
-    <h1>Debt Escape (NPM)</h1>
+    <h1>🏦 Debt Escape 🏦</h1>
 
     <div id="setup">
-        <input type="text" id="player-names" placeholder="Names (comma separated)" value="Alice,Bob">
-        <button id="start-btn">Start Game</button>
+        <p>Enter player names separated by commas:</p>
+        <input type="text" id="player-names" placeholder="Alice, Bob, Charlie" value="Alice, Bob">
+        <br>
+        <button id="start-btn">Start Game 🚀</button>
     </div>
 
     <div id="game-container" class="hidden">
-        <div id="stats"></div>
-        <div id="board"></div>
-        <div id="messages"></div>
-        <div id="controls">
-            <div id="input-area" class="hidden">
-                <p id="prompt"></p>
-                <input type="text" id="user-input">
-                <button id="submit-btn">Submit</button>
+        <div id="top-bar"></div>
+
+        <div id="board-wrapper">
+            <div id="board-circle">
+                <div class="tile" id="tile-0"><div class="tile-emoji">🏥</div><div class="tile-name">Rehab</div><div class="token-container"></div></div>
+                <div class="tile" id="tile-1"><div class="tile-emoji">🎰</div><div class="tile-name">Casino</div><div class="token-container"></div></div>
+                <div class="tile" id="tile-3"><div class="tile-emoji">🛍️</div><div class="tile-name">Shop</div><div class="token-container"></div></div>
+                <div class="tile" id="tile-2"><div class="tile-emoji">🌑</div><div class="tile-name">Back Alley</div><div class="token-container"></div></div>
             </div>
-            <p id="wait-msg">Waiting for game update...</p>
+        </div>
+
+        <div id="messages"></div>
+
+        <div id="interaction-area">
+            <h2 id="action-prompt">Waiting for turn...</h2>
+            <div id="btn-container" class="btn-group"></div>
+            <div id="manual-input" class="hidden">
+                <input type="text" id="user-input">
+                <button class="action-btn" id="submit-btn">Send ✅</button>
+            </div>
         </div>
     </div>
 
@@ -56,55 +101,98 @@
             const messagesDiv = document.getElementById('messages');
             const p = document.createElement('p');
             p.textContent = msg;
-            messagesDiv.appendChild(p);
-            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+            messagesDiv.prepend(p);
+            messagesDiv.scrollTop = 0;
         });
 
         socket.on('game_state', (state) => {
             if (!state) return;
 
             // Render Stats
-            const statsDiv = document.getElementById('stats');
-            statsDiv.innerHTML = state.players.map((p, i) => `
-                <div style="color: ${i === state.currentPlayerIdx ? 'red' : 'black'}">
-                    <strong>${p.name}</strong><br>
-                    Money: ${p.money}<br>
-                    Debt: ${p.debt}
+            const topBar = document.getElementById('top-bar');
+            topBar.innerHTML = state.players.map((p, i) => `
+                <div class="player-card ${i === state.currentPlayerIdx ? 'active' : ''}" style="border-left-color: ${colors[i % colors.length]}">
+                    <h3>${p.name}</h3>
+                    <p>💰 Money: ${p.money}</p>
+                    <p>📉 Debt: ${p.debt}</p>
+                    <p>🎒 Items: ${p.inventory.length > 0 ? p.inventory.join(', ') : 'None'}</p>
                 </div>
             `).join('');
 
             // Render Board
-            const boardDiv = document.getElementById('board');
-            boardDiv.innerHTML = state.board.map((name, i) => {
+            for(let i=0; i<4; i++) {
+                const tileDiv = document.getElementById(`tile-${i}`);
+                tileDiv.classList.remove('active');
+                const tokenContainer = tileDiv.querySelector('.token-container');
+                tokenContainer.innerHTML = '';
+
                 const playersOnTile = state.players.filter(p => p.position === i);
-                return `
-                    <div class="tile">
-                        ${name}
-                        <div>${playersOnTile.map(p => {
-                            const pIdx = state.players.findIndex(player => player.name === p.name);
-                            return `<span class="player-token" style="background: ${colors[pIdx % colors.length]}"></span>`;
-                        }).join('')}</div>
-                    </div>
-                `;
-            }).join('');
+                playersOnTile.forEach(p => {
+                    const pIdx = state.players.findIndex(player => player.name === p.name);
+                    const token = document.createElement('div');
+                    token.className = 'token';
+                    token.style.background = colors[pIdx % colors.length];
+                    tokenContainer.appendChild(token);
+                });
+            }
+            const activePlayerPos = state.players[state.currentPlayerIdx].position;
+            document.getElementById(`tile-${activePlayerPos}`).classList.add('active');
+        });
+
+        const actionPrompt = document.getElementById('action-prompt');
+        const btnContainer = document.getElementById('btn-container');
+        const manualInput = document.getElementById('manual-input');
+
+        socket.on('need_roll', (prompt) => {
+            resetInteraction();
+            actionPrompt.textContent = prompt;
+            const btn = document.createElement('button');
+            btn.className = 'action-btn roll-btn';
+            btn.textContent = 'Roll 🎲';
+            btn.onclick = () => {
+                socket.emit('submit_input', 'roll');
+                resetInteraction();
+            };
+            btnContainer.appendChild(btn);
+        });
+
+        socket.on('need_choice', ({ prompt, choices }) => {
+            resetInteraction();
+            actionPrompt.textContent = prompt;
+            choices.forEach(choice => {
+                const btn = document.createElement('button');
+                btn.className = 'action-btn';
+                btn.textContent = choice;
+                btn.onclick = () => {
+                    socket.emit('submit_input', choice);
+                    resetInteraction();
+                };
+                btnContainer.appendChild(btn);
+            });
         });
 
         socket.on('need_input', (prompt) => {
-            document.getElementById('input-area').classList.remove('hidden');
-            document.getElementById('wait-msg').classList.add('hidden');
-            document.getElementById('prompt').textContent = prompt;
+            resetInteraction();
+            actionPrompt.textContent = prompt;
+            manualInput.classList.remove('hidden');
         });
 
         document.getElementById('submit-btn').onclick = () => {
             const val = document.getElementById('user-input').value;
             socket.emit('submit_input', val);
             document.getElementById('user-input').value = '';
-            document.getElementById('input-area').classList.add('hidden');
-            document.getElementById('wait-msg').classList.remove('hidden');
+            resetInteraction();
         };
 
+        function resetInteraction() {
+            actionPrompt.textContent = "Waiting for next move...";
+            btnContainer.innerHTML = '';
+            manualInput.classList.add('hidden');
+        }
+
         socket.on('game_over', () => {
-            document.getElementById('wait-msg').textContent = "Game Over!";
+            resetInteraction();
+            actionPrompt.textContent = "🎉 GAME OVER 🎉";
         });
     </script>
 </body>

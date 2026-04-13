@@ -32,6 +32,20 @@ io.on('connection', (socket) => {
             });
         };
 
+        game.getChoice = async (prompt, choices) => {
+            io.emit('need_choice', { prompt, choices });
+            return new Promise((resolve) => {
+                inputResolvers.set(socket.id, resolve);
+            });
+        };
+
+        game.waitForRoll = async (prompt) => {
+            io.emit('need_roll', prompt);
+            return new Promise((resolve) => {
+                inputResolvers.set(socket.id, resolve);
+            });
+        };
+
         runGame();
     });
 

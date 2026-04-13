@@ -12,10 +12,10 @@ class Game {
 
     createBoard() {
         return [
-            new RehabTile(), new CasinoTile(), new BackAlleyTile(), new ShopTile(),
-            new CasinoTile(), new BackAlleyTile(), new Tile("Plain Tile"), new CasinoTile(),
-            new ShopTile(), new BackAlleyTile(), new CasinoTile(), new BackAlleyTile(),
-            new ShopTile(), new Tile("Plain Tile"), new CasinoTile(), new BackAlleyTile()
+            new RehabTile(), // 0
+            new CasinoTile(), // 1
+            new BackAlleyTile(), // 2
+            new ShopTile() // 3
         ];
     }
 
@@ -24,27 +24,26 @@ class Game {
     }
 
     async getInput(prompt) {
-        // To be implemented by the server/client interface
         throw new Error("getInput not implemented");
     }
 
+    async getChoice(prompt, choices) {
+        throw new Error("getChoice not implemented");
+    }
+
+    async waitForRoll(prompt) {
+        throw new Error("waitForRoll not implemented");
+    }
+
     async getIntInput(prompt, min, max) {
-        while (true) {
-            const val = parseInt(await this.getInput(prompt));
-            if (!isNaN(val) && (min === undefined || val >= min) && (max === undefined || val <= max)) {
-                return val;
-            }
-            this.log("Invalid input. Please enter a valid number.");
-        }
+        // Fallback or use getChoice if range is small
+        const val = parseInt(await this.getInput(prompt));
+        return val;
     }
 
     async getBoolInput(prompt) {
-        while (true) {
-            const val = (await this.getInput(prompt)).toLowerCase();
-            if (['y', 'yes'].includes(val)) return true;
-            if (['n', 'no'].includes(val)) return false;
-            this.log("Please enter 'y' or 'n'.");
-        }
+        const choice = await this.getChoice(prompt, ["Yes", "No"]);
+        return choice === "Yes";
     }
 
     async useLoadedDice(player) {
@@ -57,21 +56,23 @@ class Game {
         return 0;
     }
 
-    async rollDice(player) {
+    async rollDice(player, prompt = "Roll the dice!") {
+        await this.waitForRoll(prompt);
         let roll = Math.floor(Math.random() * 6) + 1;
         if (player) {
             const bonus = await this.useLoadedDice(player);
             if (bonus) {
                 roll += bonus;
-                this.log(`Loaded Dice used! Roll: ${roll}`);
+                this.log(`🎲 Loaded Dice used! Roll: ${roll}`);
             }
         }
         return roll;
     }
 
     async movePlayer(player) {
+        await this.waitForRoll(`${player.name}'s turn! Roll to move! 🎲`);
         const roll = Math.floor(Math.random() * 6) + 1;
-        this.log(`${player.name} rolled a ${roll} for movement.`);
+        this.log(`🚶 ${player.name} rolled a ${roll} for movement.`);
         player.position = (player.position + roll) % this.board.length;
         const tile = this.board[player.position];
         await tile.onLand(player, this);
