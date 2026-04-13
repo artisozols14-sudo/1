@@ -80,6 +80,10 @@ class Game {
     }
 
     async playTurn() {
+        if (this.players.length === 0) {
+            await new Promise(r => setTimeout(r, 1000));
+            return;
+        }
         const player = this.players[this.currentPlayerIdx];
         this.log(`--- ${player.name}'s Turn ---`);
         await this.movePlayer(player);

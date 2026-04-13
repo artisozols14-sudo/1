@@ -40,6 +40,20 @@ io.on('connection', (socket) => {
         }
     });
 
+    socket.on('join_table', ({ roomId, playerName }) => {
+        const game = gameRooms.get(roomId);
+        if (game) {
+            if (game.players.some(p => p.name === playerName)) {
+                socket.emit('error', 'Name already taken');
+                return;
+            }
+            const Player = require('./src/js/player');
+            game.players.push(new Player(playerName));
+            game.log(`👋 ${playerName} has joined the table!`);
+            io.to(roomId).emit('game_state', getGameState(roomId));
+        }
+    });
+
     socket.on('submit_input', ({ roomId, val }) => {
         const resolve = inputResolvers.get(roomId);
         if (resolve) {

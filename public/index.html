@@ -168,6 +168,15 @@
     </div>
 
     <div id="game-container" class="hidden">
+        <div id="lobby-overlay" class="hidden" style="position: absolute; inset: 0; background: rgba(0,0,0,0.8); z-index: 1000; display: flex; align-items: center; justify-content: center;">
+            <div style="background: white; color: #333; padding: 30px; border-radius: 15px; text-align: center;">
+                <h3>Join the Table 🃏</h3>
+                <input type="text" id="join-name-input" placeholder="Your Name" style="padding: 10px; width: 200px; border-radius: 8px; border: 1px solid #ddd;">
+                <br><br>
+                <button class="action-btn" onclick="joinTable()">Sit Down</button>
+            </div>
+        </div>
+
         <div id="stats-container"></div>
 
         <div id="board-wrapper">
@@ -228,13 +237,26 @@
         }
 
         function joinRoom() {
-            localPlayerName = document.getElementById('player-names').value.trim();
             const roomId = document.getElementById('room-id-input').value.trim().toUpperCase();
             socket.emit('join_room', roomId);
         }
 
+        function joinTable() {
+            const name = document.getElementById('join-name-input').value.trim();
+            if (!name) return;
+            localPlayerName = name;
+            socket.emit('join_table', { roomId: currentRoomId, playerName: name });
+            document.getElementById('lobby-overlay').classList.add('hidden');
+        }
+
         socket.on('room_created', (roomId) => { currentRoomId = roomId; enterGame(); });
-        socket.on('joined_room', (roomId) => { currentRoomId = roomId; enterGame(); });
+        socket.on('joined_room', (roomId) => {
+            currentRoomId = roomId;
+            enterGame();
+            if (!localPlayerName) {
+                document.getElementById('lobby-overlay').classList.remove('hidden');
+            }
+        });
         socket.on('error', (msg) => alert(msg));
 
         function enterGame() {
