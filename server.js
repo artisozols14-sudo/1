@@ -10,72 +10,87 @@ const io = new Server(server);
 
 app.use(express.static('public'));
 
-let game = null;
-let inputResolvers = new Map();
+const gameRooms = new Map();
+const inputResolvers = new Map();
 
 io.on('connection', (socket) => {
     console.log('a user connected');
 
-    socket.on('start_game', (playerNames) => {
-        game = new Game(playerNames);
+    socket.on('create_room', (playerNames) => {
+        const roomId = Math.random().toString(36).substring(2, 8).toUpperCase();
+        const game = new Game(playerNames);
 
-        // Inject Socket.io into game for input/output
-        game.log = (msg) => {
-            console.log(msg);
-            io.emit('game_message', msg);
-        };
+        setupGame(game, roomId);
+        gameRooms.set(roomId, game);
 
-        game.getInput = async (prompt) => {
-            io.emit('need_input', prompt);
-            return new Promise((resolve) => {
-                inputResolvers.set(socket.id, resolve);
-            });
-        };
+        socket.join(roomId);
+        socket.emit('room_created', roomId);
 
-        game.getChoice = async (prompt, choices, player) => {
-            const usableItems = player ? player.inventory.filter(item => ["Peek", "Insurance", "Second", "Loaded"].some(k => item.includes(k))) : [];
-            io.emit('need_choice', { prompt, choices, usableItems });
-            return new Promise((resolve) => {
-                inputResolvers.set(socket.id, resolve);
-            });
-        };
-
-        game.waitForRoll = async (prompt, player) => {
-            const usableItems = player ? player.inventory.filter(item => ["Peek", "Insurance", "Second", "Loaded"].some(k => item.includes(k))) : [];
-            io.emit('need_roll', { prompt, usableItems });
-            return new Promise((resolve) => {
-                inputResolvers.set(socket.id, resolve);
-            });
-        };
-
-        runGame();
+        runGame(roomId);
     });
 
-    socket.on('submit_input', (val) => {
-        const resolve = inputResolvers.get(socket.id);
-        if (resolve) {
-            resolve(val);
-            inputResolvers.delete(socket.id);
+    socket.on('join_room', (roomId) => {
+        roomId = roomId.toUpperCase();
+        if (gameRooms.has(roomId)) {
+            socket.join(roomId);
+            socket.emit('joined_room', roomId);
+            socket.emit('game_state', getGameState(roomId));
+        } else {
+            socket.emit('error', 'Room not found');
         }
     });
 
-    socket.on('next_turn', () => {
-        if (game && !game.gameOver) {
-            // This is actually handled in the runGame loop
+    socket.on('submit_input', ({ roomId, val }) => {
+        const resolve = inputResolvers.get(roomId);
+        if (resolve) {
+            resolve(val);
+            inputResolvers.delete(roomId);
         }
     });
 });
 
-async function runGame() {
-    while (game && !game.gameOver) {
-        io.emit('game_state', getGameState());
-        await game.playTurn();
-    }
-    io.emit('game_state', getGameState());
-    io.emit('game_over');
+function setupGame(game, roomId) {
+    game.log = (msg) => {
+        console.log(`[${roomId}] ${msg}`);
+        io.to(roomId).emit('game_message', msg);
+    };
+
+    game.getChoice = async (prompt, choices, player) => {
+        const usableItems = player ? player.inventory.filter(item => ["Peek", "Insurance", "Second", "Loaded"].some(k => item.includes(k))) : [];
+        io.to(roomId).emit('need_choice', { prompt, choices, usableItems });
+        return new Promise((resolve) => {
+            inputResolvers.set(roomId, resolve);
+        });
+    };
+
+    game.waitForRoll = async (prompt, player) => {
+        const usableItems = player ? player.inventory.filter(item => ["Peek", "Insurance", "Second", "Loaded"].some(k => item.includes(k))) : [];
+        io.to(roomId).emit('need_roll', { prompt, usableItems });
+        return new Promise((resolve) => {
+            inputResolvers.set(roomId, resolve);
+        });
+    };
+
+    game.getInput = async (prompt) => {
+        io.to(roomId).emit('need_input', prompt);
+        return new Promise((resolve) => {
+            inputResolvers.set(roomId, resolve);
+        });
+    };
 }
 
-function getGameState() {
+async function runGame(roomId) {
+    const game = gameRooms.get(roomId);
+    while (game && !game.gameOver) {
+        io.to(roomId).emit('game_state', getGameState(roomId));
+        await game.playTurn();
+    }
+    io.to(roomId).emit('game_state', getGameState(roomId));
+    io.to(roomId).emit('game_over');
+}
+
+function getGameState(roomId) {
+    const game = gameRooms.get(roomId);
     if (!game) return null;
     return {
         players: game.players,
@@ -85,6 +100,6 @@ function getGameState() {
 }
 
 const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => {
+server.listen(PORT, '0.0.0.0', () => {
     console.log(`listening on *:${PORT}`);
 });

@@ -63,14 +63,20 @@
         <div id="setup-card">
             <h2>🏥 Debt Escape 🎰</h2>
             <p>Escape your 50,000 debt!</p>
-            <input type="text" id="player-names" placeholder="Alice, Bob" value="Alice, Bob">
-            <button class="action-btn" onclick="startGame()">Start Game 🚀</button>
+
+            <div id="setup-options">
+                <input type="text" id="player-names" placeholder="Names (e.g. Alice, Bob)" value="Alice, Bob">
+                <button class="action-btn" onclick="createRoom()">Create New Game 🏠</button>
+                <hr>
+                <input type="text" id="room-id-input" placeholder="ROOM CODE (e.g. AB12CD)">
+                <button class="action-btn" onclick="joinRoom()">Join Game 🤝</button>
+            </div>
         </div>
     </div>
 
     <div id="main-layout" class="hidden">
         <div id="game-area">
-            <h1>🏛️ Debt Escape 🏛️</h1>
+            <h1>🏛️ Debt Escape 🏛️ <span id="current-room-display" style="font-size: 0.5em; color: #7f8c8d;"></span></h1>
 
             <div id="top-bar"></div>
 
@@ -103,12 +109,34 @@
     <script>
         const socket = io();
         const colors = ['#f44336', '#2196f3', '#4caf50', '#ffeb3b', '#9c27b0'];
+        let currentRoomId = null;
 
-        function startGame() {
+        function createRoom() {
             const names = document.getElementById('player-names').value.split(',').map(n => n.trim());
-            socket.emit('start_game', names);
+            socket.emit('create_room', names);
+        }
+
+        function joinRoom() {
+            const roomId = document.getElementById('room-id-input').value.trim();
+            socket.emit('join_room', roomId);
+        }
+
+        socket.on('room_created', (roomId) => {
+            currentRoomId = roomId;
+            enterGame();
+        });
+
+        socket.on('joined_room', (roomId) => {
+            currentRoomId = roomId;
+            enterGame();
+        });
+
+        socket.on('error', (msg) => alert(msg));
+
+        function enterGame() {
             document.getElementById('setup-overlay').classList.add('hidden');
             document.getElementById('main-layout').classList.remove('hidden');
+            document.getElementById('current-room-display').textContent = `ROOM: ${currentRoomId}`;
         }
 
         socket.on('game_message', (msg) => {
@@ -164,14 +192,14 @@
             const rollBtn = document.createElement('button');
             rollBtn.className = 'action-btn roll-btn';
             rollBtn.textContent = 'Roll 🎲';
-            rollBtn.onclick = () => { socket.emit('submit_input', 'roll'); resetInteraction(); };
+            rollBtn.onclick = () => { socket.emit('submit_input', { roomId: currentRoomId, val: 'roll' }); resetInteraction(); };
             btnContainer.appendChild(rollBtn);
 
             usableItems.forEach(item => {
                 const btn = document.createElement('button');
                 btn.className = 'action-btn item-btn';
                 btn.textContent = `Use ${item} 🎒`;
-                btn.onclick = () => { socket.emit('submit_input', item); resetInteraction(); };
+                btn.onclick = () => { socket.emit('submit_input', { roomId: currentRoomId, val: item }); resetInteraction(); };
                 btnContainer.appendChild(btn);
             });
         });
@@ -183,7 +211,7 @@
                 const btn = document.createElement('button');
                 btn.className = 'action-btn';
                 btn.textContent = choice;
-                btn.onclick = () => { socket.emit('submit_input', choice); resetInteraction(); };
+                btn.onclick = () => { socket.emit('submit_input', { roomId: currentRoomId, val: choice }); resetInteraction(); };
                 btnContainer.appendChild(btn);
             });
             if (usableItems) {
@@ -191,7 +219,7 @@
                     const btn = document.createElement('button');
                     btn.className = 'action-btn item-btn';
                     btn.textContent = `Use ${item} 🎒`;
-                    btn.onclick = () => { socket.emit('submit_input', item); resetInteraction(); };
+                    btn.onclick = () => { socket.emit('submit_input', { roomId: currentRoomId, val: item }); resetInteraction(); };
                     btnContainer.appendChild(btn);
                 });
             }
@@ -204,7 +232,7 @@
         });
 
         document.getElementById('submit-btn').onclick = () => {
-            socket.emit('submit_input', document.getElementById('user-input').value);
+            socket.emit('submit_input', { roomId: currentRoomId, val: document.getElementById('user-input').value });
             document.getElementById('user-input').value = '';
             resetInteraction();
         };
