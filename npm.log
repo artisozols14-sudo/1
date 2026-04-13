@@ -1,0 +1,11 @@
+
+> app@1.0.0 start
+> node server.js
+
+listening on *:3000
+a user connected
+--- Alice's Turn ---
+Money: 0, Debt: 50000, Pos: 0
+a user connected
+--- Alice's Turn ---
+Money: 0, Debt: 50000, Pos: 0

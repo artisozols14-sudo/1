@@ -1,5 +1,5 @@
 const Player = require('./player');
-const { Tile, RehabTile, CasinoTile, BackAlleyTile, ShopTile } = require('./tiles');
+const { Tile, RehabTile, CasinoTile, BackAlleyTile, ShopTile, TaxiTile } = require('./tiles');
 
 class Game {
     constructor(playerNames) {
@@ -15,7 +15,8 @@ class Game {
             new RehabTile(), // 0
             new CasinoTile(), // 1
             new BackAlleyTile(), // 2
-            new ShopTile() // 3
+            new ShopTile(), // 3
+            new TaxiTile() // 4
         ];
     }
 
@@ -27,46 +28,45 @@ class Game {
         throw new Error("getInput not implemented");
     }
 
-    async getChoice(prompt, choices) {
+    async getChoice(prompt, choices, player) {
         throw new Error("getChoice not implemented");
     }
 
-    async waitForRoll(prompt) {
+    async waitForRoll(prompt, player) {
         throw new Error("waitForRoll not implemented");
     }
 
     async getIntInput(prompt, min, max) {
-        // Fallback or use getChoice if range is small
         const val = parseInt(await this.getInput(prompt));
         return val;
     }
 
-    async getBoolInput(prompt) {
-        const choice = await this.getChoice(prompt, ["Yes", "No"]);
-        return choice === "Yes";
+    async getBoolInput(prompt, player) {
+        const choice = await this.getChoice(prompt, ["Yes ✅", "No ❌"], player);
+        return choice.includes("Yes");
     }
 
     async useLoadedDice(player) {
-        if (player.hasItem("Loaded Dice")) {
-            if (await this.getBoolInput("Use Loaded Dice for +1 to this roll? (y/n): ")) {
-                player.removeItem("Loaded Dice");
-                return 1;
-            }
-        }
+        // This is now handled in the waitForRoll loop
         return 0;
     }
 
     async rollDice(player, prompt = "Roll the dice!") {
-        await this.waitForRoll(prompt);
-        let roll = Math.floor(Math.random() * 6) + 1;
-        if (player) {
-            const bonus = await this.useLoadedDice(player);
-            if (bonus) {
-                roll += bonus;
+        let input = "";
+        while(true) {
+            input = await this.waitForRoll(prompt, player);
+            if (input === 'roll') break;
+
+            if (input.includes("Loaded Dice")) {
+                player.removeItem("Loaded Dice");
+                const roll = Math.floor(Math.random() * 6) + 1 + 1;
                 this.log(`🎲 Loaded Dice used! Roll: ${roll}`);
+                return roll;
             }
+            this.log(`⚠️ ${input} cannot be used here.`);
         }
-        return roll;
+
+        return Math.floor(Math.random() * 6) + 1;
     }
 
     async movePlayer(player) {

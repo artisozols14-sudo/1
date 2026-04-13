@@ -32,15 +32,17 @@ io.on('connection', (socket) => {
             });
         };
 
-        game.getChoice = async (prompt, choices) => {
-            io.emit('need_choice', { prompt, choices });
+        game.getChoice = async (prompt, choices, player) => {
+            const usableItems = player ? player.inventory.filter(item => ["Peek", "Insurance", "Second", "Loaded"].some(k => item.includes(k))) : [];
+            io.emit('need_choice', { prompt, choices, usableItems });
             return new Promise((resolve) => {
                 inputResolvers.set(socket.id, resolve);
             });
         };
 
-        game.waitForRoll = async (prompt) => {
-            io.emit('need_roll', prompt);
+        game.waitForRoll = async (prompt, player) => {
+            const usableItems = player ? player.inventory.filter(item => ["Peek", "Insurance", "Second", "Loaded"].some(k => item.includes(k))) : [];
+            io.emit('need_roll', { prompt, usableItems });
             return new Promise((resolve) => {
                 inputResolvers.set(socket.id, resolve);
             });

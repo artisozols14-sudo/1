@@ -23,10 +23,9 @@ class RehabTile extends Tile {
         if (player.money <= 0) {
             choices.push("I Don't Have a Problem (+5000 cash) 💵");
         }
-        choices.push("Pay off debt (1:1 ratio) 💸");
         choices.push("Skip ⏭️");
 
-        const choice = await game.getChoice("Choose an option:", choices);
+        const choice = await game.getChoice("Choose an option:", choices, player);
 
         if (choice.includes("Getting Help")) {
             if (!player.hasGettingHelpThisVisit) {
@@ -39,11 +38,6 @@ class RehabTile extends Tile {
         } else if (choice.includes("I Don't Have a Problem")) {
             player.money += 5000;
             game.log("💰 Received 5000 cash. Good luck!");
-        } else if (choice.includes("Pay off debt")) {
-            const amount = await game.getIntInput(`How much debt do you want to pay off? (You have ${player.money} money): `, 0, player.money);
-            player.money -= amount;
-            player.debt -= amount;
-            game.log(`💸 Paid off ${amount} debt.`);
         }
     }
 }
@@ -71,24 +65,26 @@ class CasinoTile extends Tile {
         game.log(`🎲 Initial rolls: ${d1}, ${d2}. Total: ${total}`);
 
         while (total < 21) {
-            if (player.hasItem("Peek")) {
-                if (await game.getBoolInput("Use Peek? 🔍")) {
-                    player.removeItem("Peek");
-                    let nextDie = Math.floor(Math.random() * 6) + 1;
-                    game.log(`👁️ Next die would be: ${nextDie}`);
-                    if (await game.getBoolInput("Use it? ✅")) {
-                        if (nextDie === 1) nextDie = await this.handleAce(game);
-                        total += nextDie;
-                        game.log(`📈 New total: ${total}`);
-                        if (total >= 21) break;
-                        continue;
-                    } else {
-                        game.log("❌ Discarded.");
-                    }
+            let choices = ["Hit ➕", "Stand ✋"];
+            // Items are handled by the game.getChoice / rollDice logic now if we pass player
+            const action = await game.getChoice("Hit or Stand?", choices, player);
+
+            if (action.includes("Peek")) {
+                player.removeItem("Peek");
+                let nextDie = Math.floor(Math.random() * 6) + 1;
+                game.log(`👁️ Next die would be: ${nextDie}`);
+                if (await game.getBoolInput("Use it? ✅", player)) {
+                    if (nextDie === 1) nextDie = await this.handleAce(game);
+                    total += nextDie;
+                    game.log(`📈 New total: ${total}`);
+                    if (total >= 21) break;
+                    continue;
+                } else {
+                    game.log("❌ Discarded.");
+                    continue;
                 }
             }
 
-            const action = await game.getChoice("Hit or Stand?", ["Hit ➕", "Stand ✋"]);
             if (action.includes("Hit")) {
                 let die = await game.rollDice(player, "Roll for Hit! 🎲");
                 if (die === 1) die = await this.handleAce(game);
@@ -106,7 +102,7 @@ class CasinoTile extends Tile {
         let total = await this.playRound(player, game);
 
         if (player.hasItem("Second Chance")) {
-            if (await game.getBoolInput("Use Second Chance to reroll whole turn? 🔄")) {
+            if (await game.getBoolInput("Use Second Chance to reroll whole turn? 🔄", player)) {
                 player.removeItem("Second Chance");
                 total = await this.playRound(player, game);
             }
@@ -132,7 +128,7 @@ class CasinoTile extends Tile {
                 player.riggedGame = false;
                 payout = 4000;
             } else if (player.hasItem("Insurance")) {
-                if (await game.getBoolInput("Use Insurance to prevent bust? 🛡️")) {
+                if (await game.getBoolInput("Use Insurance to prevent bust? 🛡️", player)) {
                     player.removeItem("Insurance");
                     game.log("🛡️ Insurance used. No loss.");
                     payout = 0;
@@ -143,7 +139,7 @@ class CasinoTile extends Tile {
         if (!bust && player.shadyBetBonus) {
             game.log("😈 Shady Bets bonus! Doubling your win.");
             payout *= 2;
-            player.shadyBetBonus = false;
+            player.shady_bet_bonus = false;
         }
 
         player.money += payout;
@@ -161,7 +157,7 @@ class BackAlleyTile extends Tile {
     async onLand(player, game) {
         await super.onLand(player, game);
 
-        const choice = await game.getChoice("Choose your fate:", ["Receive Event 🎭", "Skip Turn ⏭️"]);
+        const choice = await game.getChoice("Choose your fate:", ["Receive Event 🎭", "Skip Turn ⏭️"], player);
         if (choice.includes("Skip")) {
             game.log("⏭️ You chose to skip your turn.");
             return;
@@ -172,7 +168,7 @@ class BackAlleyTile extends Tile {
 
         if (player.hasItem("X-Ray Glasses")) {
             game.log("🕶️ X-Ray Glasses allow you to choose your event!");
-            event = await game.getChoice("Choose an event:", events);
+            event = await game.getChoice("Choose an event:", events, player);
             player.removeItem("X-Ray Glasses");
         } else {
             event = events[Math.floor(Math.random() * events.length)];
@@ -216,7 +212,7 @@ class BackAlleyTile extends Tile {
                 return;
             }
             const opponents = game.players.filter(p => p !== player);
-            const opponentName = await game.getChoice("Choose an opponent:", opponents.map(p => p.name));
+            const opponentName = await game.getChoice("Choose an opponent:", opponents.map(p => p.name), player);
             const opponent = opponents.find(p => p.name === opponentName);
 
             const bet = await game.getIntInput("Enter bet amount (up to 5000): ", 0, Math.min(5000, Math.max(0, player.money)));
@@ -237,7 +233,7 @@ class BackAlleyTile extends Tile {
         } else if (event.includes("Hippodrome")) {
             const hBet = await game.getIntInput("Enter bet amount: ", 0, Math.max(0, player.money));
             const guessChoices = ["1", "2", "3", "4", "5", "6"];
-            const guess = parseInt(await game.getChoice("Choose a dice number:", guessChoices));
+            const guess = parseInt(await game.getChoice("Choose a dice number:", guessChoices, player));
             const hRoll = await game.rollDice(player, "Horse racing roll! 🎲");
             game.log(`🎲 Rolled ${hRoll}`);
             if (hRoll === guess) {
@@ -272,7 +268,7 @@ class ShopTile extends Tile {
         const choices = items.map(item => `${item} (${this.prices[item]})`);
         choices.push("Leave 🚪");
 
-        const choice = await game.getChoice("Choose an item to buy:", choices);
+        const choice = await game.getChoice("Choose an item to buy:", choices, player);
         if (choice.includes("Leave")) {
             game.log("🚪 Leaving shop.");
             return;
@@ -295,8 +291,7 @@ class ShopTile extends Tile {
                     game.log("😢 Better luck next time.");
                 }
             } else {
-                // Strip emoji for internal storage if needed, or keep it
-                player.addItem(selectedItemKey.split(' ')[0]);
+                player.addItem(selectedItemKey.split(' (')[0]);
             }
         } else {
             game.log("❌ Not enough money!");
@@ -304,4 +299,23 @@ class ShopTile extends Tile {
     }
 }
 
-module.exports = { Tile, RehabTile, CasinoTile, BackAlleyTile, ShopTile };
+class TaxiTile extends Tile {
+    constructor() {
+        super("Taxi Service", "🚕");
+    }
+
+    async onLand(player, game) {
+        await super.onLand(player, game);
+        game.log("Where do you want to go? 🚕");
+        const boardNames = game.board.map((t, i) => `${i}: ${t.name} ${t.emoji}`);
+        const choice = await game.getChoice("Choose location:", boardNames, player);
+        const targetIdx = parseInt(choice.split(':')[0]);
+
+        player.position = targetIdx;
+        const tile = game.board[player.position];
+        game.log(`🚕 Taxi arriving at ${tile.name}...`);
+        await tile.onLand(player, game);
+    }
+}
+
+module.exports = { Tile, RehabTile, CasinoTile, BackAlleyTile, ShopTile, TaxiTile };
