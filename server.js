@@ -43,7 +43,9 @@ io.on('connection', (socket) => {
     socket.on('join_table', ({ roomId, playerName }) => {
         const game = gameRooms.get(roomId);
         if (game) {
-            if (game.players.some(p => p.name === playerName)) {
+            playerName = playerName.trim();
+            if (!playerName) return;
+            if (game.players.some(p => p.name.toLowerCase() === playerName.toLowerCase())) {
                 socket.emit('error', 'Name already taken');
                 return;
             }

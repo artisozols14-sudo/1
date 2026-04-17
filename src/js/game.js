@@ -15,8 +15,7 @@ class Game {
             new RehabTile(), // 0
             new CasinoTile(), // 1
             new BackAlleyTile(), // 2
-            new ShopTile(), // 3
-            new TaxiTile() // 4
+            new ShopTile() // 3
         ];
     }
 
@@ -71,8 +70,7 @@ class Game {
     }
 
     async movePlayer(player) {
-        await this.waitForRoll(`${player.name}'s turn! Roll to move! 🎲`);
-        const roll = Math.floor(Math.random() * 6) + 1;
+        const roll = await this.rollDice(player, `${player.name}'s turn! Roll to move! 🎲`);
         this.log(`🚶 ${player.name} rolled a ${roll} for movement.`);
         player.position = (player.position + roll) % this.board.length;
         const tile = this.board[player.position];

@@ -185,7 +185,6 @@
                 <div class="tile" id="tile-1"><div class="tile-emoji">🎰</div><div class="tile-name">Casino</div></div>
                 <div class="tile" id="tile-2"><div class="tile-emoji">🌑</div><div class="tile-name">Back Alley</div></div>
                 <div class="tile" id="tile-3"><div class="tile-emoji">🛍️</div><div class="tile-name">Shop</div></div>
-                <div class="tile" id="tile-4"><div class="tile-emoji">🚕</div><div class="tile-name">Taxi</div></div>
             </div>
 
             <div id="center-ui">
@@ -329,7 +328,8 @@
                     playerTokens[p.name] = token;
                     updateTokenPos(p.name, p.position, i, state.players.length);
                 } else {
-                    const oldPos = oldState ? oldState.players[i].position : p.position;
+                    const oldP = (oldState && oldState.players) ? oldState.players[i] : null;
+                    const oldPos = oldP ? oldP.position : p.position;
                     if (oldPos !== p.position) {
                         await moveTokenAnimated(p.name, oldPos, p.position, i, state.players.length);
                     } else {
@@ -386,6 +386,45 @@
                 document.getElementById('btn-container').appendChild(btn);
             });
             addItems(usableItems);
+        });
+
+        socket.on('need_input', ({ prompt, min, max, playerName }) => {
+            resetInteraction();
+            if (playerName && localPlayerName !== playerName) {
+                document.getElementById('action-prompt').textContent = `Waiting for ${playerName}...`;
+                return;
+            }
+            document.getElementById('action-prompt').textContent = prompt;
+            document.getElementById('manual-input').classList.remove('hidden');
+            const input = document.getElementById('user-input');
+            input.value = min;
+
+            const btnContainer = document.getElementById('btn-container');
+
+            // Quick bet buttons
+            [100, 500, 1000, 5000].forEach(amt => {
+                if (amt <= max) {
+                    const btn = document.createElement('button');
+                    btn.className = 'action-btn item-btn';
+                    btn.textContent = `+${amt}`;
+                    btn.onclick = () => {
+                        let val = parseInt(input.value) || 0;
+                        input.value = Math.min(max, val + amt);
+                    };
+                    btnContainer.appendChild(btn);
+                }
+            });
+
+            const maxBtn = document.createElement('button');
+            maxBtn.className = 'action-btn item-btn';
+            maxBtn.textContent = 'MAX';
+            maxBtn.onclick = () => { input.value = max; };
+            btnContainer.appendChild(maxBtn);
+
+            document.getElementById('submit-btn').onclick = () => {
+                socket.emit('submit_input', { roomId: currentRoomId, val: input.value });
+                resetInteraction();
+            };
         });
 
         function addItems(items) {
