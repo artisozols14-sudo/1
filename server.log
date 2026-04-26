@@ -1,0 +1,13 @@
+
+> app@1.0.0 start
+> node server.js
+
+listening on *:3000
+a user connected
+[05K0J4] --- Host's Turn ---
+a user connected
+[05K0J4] 👋 Guest has joined the table!
+[05K0J4] 🚶 Host rolled a 4 for movement.
+[05K0J4] 📍 Host landed on 🏥 Rehab Center
+[05K0J4] Welcome to Rehab. Options:
+Terminated

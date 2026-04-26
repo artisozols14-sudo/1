@@ -1,0 +1,34 @@
+
+> app@1.0.0 start
+> node server.js
+
+listening on *:3000
+a user connected
+[0ZHO39] --- Alice's Turn ---
+[0ZHO39] Money: 0, Debt: 50000, Pos: 0
+a user connected
+[I221SW] --- Player1's Turn ---
+[I221SW] Money: 0, Debt: 50000, Pos: 0
+[I221SW] 🚶 Player1 rolled a 6 for movement.
+[I221SW] 📍 Player1 landed on 🎰 Casino
+[I221SW] --- Player1's Casino Turn 🎰 ---
+[I221SW] 🃏 You rolled a 1! It can be 1 or 6.
+[I221SW] 🎲 Initial rolls: 5, 1. Total: 6
+[I221SW] 🎲 Rolled 6. New total: 12
+a user connected
+[ELX9I7] --- Player1's Turn ---
+[ELX9I7] Money: 0, Debt: 50000, Pos: 0
+[ELX9I7] 🚶 Player1 rolled a 4 for movement.
+[ELX9I7] 📍 Player1 landed on 🚕 Taxi Service
+[ELX9I7] Where do you want to go? 🚕
+[ELX9I7] 🚕 Taxi arriving at Rehab Center...
+[ELX9I7] 📍 Player1 landed on 🏥 Rehab Center
+[ELX9I7] Welcome to Rehab. Options:
+[ELX9I7] ✅ Debt reduced by 1000.
+[ELX9I7] --- Player1's Turn ---
+[ELX9I7] Money: 0, Debt: 49000, Pos: 0
+[ELX9I7] 🚶 Player1 rolled a 1 for movement.
+[ELX9I7] 📍 Player1 landed on 🎰 Casino
+[ELX9I7] --- Player1's Casino Turn 🎰 ---
+[ELX9I7] 🃏 You rolled a 1! It can be 1 or 6.
+Killed
